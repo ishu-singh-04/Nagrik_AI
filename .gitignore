@@ -1,0 +1,7 @@
+myenv/
+__pycache__/
+.env
+serviceAccountKey.json
+static/uploads/
+.vscode/
+tempCodeRunnerFile.py

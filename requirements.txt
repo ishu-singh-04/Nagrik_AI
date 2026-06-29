@@ -1,0 +1,6 @@
+Flask==3.0.3
+mysql-connector-python==9.0.0
+python-dotenv==1.0.1
+google-generativeai==0.7.2
+protobuf==4.25.9
+pillow==12.2.0

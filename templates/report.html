@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nagrik.ai — Civic Reporting Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: { colors: { brandBlue: '#1e3a8a', brandLightBlue: '#3b82f6', bgWhite: '#f8fafc' } }
+          }
+      }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .spinner {
+      width: 28px; height: 28px; border: 3px solid #dce8ff;
+      border-top-color: #3b82f6; border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    /* Tab Active State */
+    .nav-btn { background: transparent; color: #64748b; transition: all 0.2s; }
+    .nav-btn.active { background: white; color: #3b82f6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-weight: 700; }
+    
+    .comparison-container {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        margin-top: 10px;
+    }
+    .comp-img {
+        width: 48%; /* Dabba size fix */
+        height: 120px; /* Uniform height */
+        object-fit: cover; /* Stretch nahi hoga */
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+  </style>
+</head>
+<body class="bg-bgWhite text-slate-800 antialiased min-h-screen flex flex-col">
+    
+<!-- Top Header -->
+<header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 bg-brandLightBlue text-white font-bold flex items-center justify-center rounded">N</div>
+        <span class="text-xl font-bold text-gray-900 tracking-tight">Nagrik.ai</span>
+    </div>
+    <a href="/" class="text-sm font-semibold text-slate-500 hover:text-brandLightBlue transition flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Back to Home
+    </a>
+</header>
+
+<main class="flex-1 w-full max-w-3xl mx-auto pt-10 px-4 pb-20">
+    
+    <!-- Header Titles -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-extrabold text-slate-900">Civic Action Center</h1>
+        <p class="text-slate-500 mt-2 text-sm">Secure, AI-Verified reporting & tracking</p>
+    </div>
+
+    <!-- NAV TABS -->
+    <div class="flex bg-slate-200 p-1.5 rounded-xl mb-8">
+        <button id="navReport" class="nav-btn active flex-1 py-2.5 text-sm font-semibold rounded-lg" onclick="switchTab('report')">Report Issue</button>
+        <button id="navTrack" class="nav-btn flex-1 py-2.5 text-sm font-semibold rounded-lg" onclick="switchTab('track')">Track Status</button>
+        <button id="navRadar" class="nav-btn flex-1 py-2.5 text-sm font-semibold rounded-lg" onclick="switchTab('radar')">Live Radar</button>
+    </div>
+
+    <!-- Main Card Container -->
+    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+
+        <!-- ════════════ REPORT SECTION ════════════ -->
+        <div id="reportSection">
+            <!-- Step 1: Phone + upload -->
+            <div id="step1">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Contact Identity</label>
+                <input type="tel" id="userPhone" placeholder="Mobile Number (for Gamification Badges)" maxlength="15" 
+                       class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 mb-6 text-sm focus:outline-none focus:border-brandLightBlue focus:ring-2 focus:ring-blue-100 transition">
+
+                <div class="relative border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 transition rounded-xl p-10 flex flex-col items-center justify-center cursor-pointer" id="uploadArea">
+                    <svg class="w-10 h-10 text-brandLightBlue mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <h3 class="text-base font-bold text-brandBlue">Capture Issue Photo</h3>
+                    <p class="text-xs text-slate-500 mt-1">Live camera + GPS telemetry required</p>
+                    <input type="file" id="imageInput" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Loading spinner -->
+            <div id="loading" style="display:none;" class="text-center py-10">
+                <div class="spinner"></div>
+                <p class="text-sm font-semibold text-brandLightBlue">AI Brain Processing Context...</p>
+            </div>
+
+            <!-- Step 2: AI result confirmation -->
+            <div id="confirmationBox" style="display:none;">
+                <div class="flex items-center space-x-2 mb-4">
+                    <div class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center">✓</div>
+                    <p class="font-bold text-slate-800">System Verification Complete</p>
+                </div>
+                
+                <div class="bg-red-50 border border-red-200 p-4 rounded-xl mb-6 text-sm text-slate-700 space-y-2">
+                    <p><strong>Severity:</strong> <span id="aiSeverity" class="text-red-600 font-bold uppercase"></span></p>
+                    <p><strong>Details (EN):</strong> <span id="aiDescEn"></span></p>
+                    <p><strong>Details (HI):</strong> <span id="aiDescHi" class="text-slate-600"></span></p>
+                </div>
+                
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Routed Department</label>
+                <select id="categorySelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 mb-6 text-sm focus:outline-none focus:border-brandLightBlue transition">
+                    <option value="Electricity">⚡ Electricity (UPPCL)</option>
+                    <option value="Water">💧 Water (Jal Nigam)</option>
+                    <option value="Pothole">🛣️ Pothole (PWD)</option>
+                    <option value="Waste">🗑️ Waste (Nagar Nigam)</option>
+                    <option value="Other">📌 Other</option>
+                </select>
+                
+                <button class="w-full py-3.5 bg-brandLightBlue text-white font-bold rounded-xl hover:bg-blue-600 transition shadow-md" id="submitFinalBtn">Confirm & Escalate Report</button>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="resultBox" style="display:none;" class="text-center py-8">
+                <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">✓</div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Verified & Escalated!</h3>
+                <div class="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-xs font-bold inline-block mb-6" id="userBadge"></div>
+                <p class="text-xs text-slate-500 uppercase tracking-wide font-bold">Your Tracking ID</p>
+                <h2 class="text-3xl font-mono font-black text-brandBlue my-2" id="ticketDisplay"></h2>
+                <button class="mt-6 px-6 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition" onclick="location.reload()">Log Another Issue</button>
+            </div>
+        </div>
+
+        <!-- ════════════ TRACK SECTION ════════════ -->
+        <div id="trackSection" style="display:none;">
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Citizen Timeline</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="trackInput" placeholder="e.g. NAGRIK-1234" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-brandLightBlue uppercase">
+                    <button class="bg-green-500 text-white px-6 rounded-xl font-bold hover:bg-green-600 transition" onclick="trackTicket()">Track</button>
+                </div>
+            </div>
+
+            <div id="trackError" style="display:none;" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4"></div>
+
+            <div id="trackResult" style="display:none;" class="bg-slate-50 border border-slate-200 p-5 rounded-xl text-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-slate-500 uppercase text-xs">Status Overview</span>
+                    <span id="tStatus" class="bg-white border border-slate-200 px-3 py-1 rounded-full text-brandBlue font-bold shadow-sm"></span>
+                </div>
+                <p class="mb-2"><strong>Category:</strong> <span id="tCat" class="text-slate-600"></span></p>
+                <p class="mb-4"><strong>Description:</strong> <span id="tDesc" class="text-slate-600"></span></p>
+
+                <!-- Dynamic Issue Visual Evidence Section Added Safely Below Description -->
+                <div id="reportedEvidenceBox" class="mt-3 mb-4" style="display:none;">
+                    <p class="font-bold text-slate-500 uppercase text-[10px] tracking-wide mb-1">Visual Evidence</p>
+                    <img id="imgReported" onclick="openImageModal(this.src)" class="w-full max-h-60 object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition" alt="Reported issue evidence">
+                </div>
+
+                <div id="comparisonBox" style="display:none;" class="border-t border-slate-200 pt-4 mt-2">
+                    <p class="font-bold text-green-600 mb-3 text-xs flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        AI Resolution Verified: <span id="tScore" class="ml-1"></span> match
+                    </p>
+                    <!-- Yahan se replace karna shuru karo -->
+<div class="grid grid-cols-2 gap-4">
+    <div class="w-full">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Before</span>
+        <!-- FIXED: Missing quote added, used aspect-video and object-cover -->
+        <img id="imgBefore" onclick="openImageModal(this.src)" class="w-full aspect-video object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition" alt="Before repair">
+    </div>
+    <div class="w-full">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">After</span>
+        <!-- FIXED: Used aspect-video and object-cover -->
+        <img id="imgAfter" onclick="openImageModal(this.src)" class="w-full aspect-video object-cover rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition" alt="After repair">
+    </div>
+</div>
+<!-- Yahan tak replace karo -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════ RADAR SECTION ════════════ -->
+        <div id="radarSection" style="display:none;">
+            <h3 class="font-bold text-slate-800 mb-4">City Transparency Map</h3>
+            <div id="publicMap" class="w-full h-[450px] rounded-xl border border-slate-200 shadow-inner z-0 relative"></div>
+        </div>
+
+    </div><!-- /.card -->
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ── State ──────────────────────────────────────────────────────────────
+  let mapInit  = false;
+  let publicMap = null;
+  let mapMarkers = [];
+  let aiPayload  = {};
+
+  // ── Tab switching ───────────────────────────────────────────────────────
+  function switchTab(tab) {
+    ['report', 'track', 'radar'].forEach(t => {
+      document.getElementById(t + 'Section').style.display = 'none';
+    });
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tab + 'Section').style.display = 'block';
+    document.getElementById('nav' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+    if (tab === 'radar') loadRadarMap();
+  }
+
+  // ── Live Radar ─────────────────────────────────────────────────────────
+  async function loadRadarMap() {
+    if (!mapInit) {
+      publicMap = L.map('publicMap').setView([28.3670, 79.4304], 12);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(publicMap);
+      mapInit = true;
+    }
+    setTimeout(() => publicMap.invalidateSize(), 100);
+
+    try {
+      const res  = await fetch('/api/public_radar');
+      const data = await res.json();
+      if (!data.success) return;
+
+      mapMarkers.forEach(m => publicMap.removeLayer(m));
+      mapMarkers = [];
+      const bounds = L.latLngBounds();
+
+      data.issues.forEach(issue => {
+        const color = issue.status === 'Resolved'    ? 'green'
+                    : issue.status === 'In Progress' ? 'orange' : 'red';
+
+        const icon = new L.Icon({
+          iconUrl:    `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+          shadowUrl:  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize:   [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
+        });
+
+        const m = L.marker([issue.latitude, issue.longitude], { icon }).addTo(publicMap);
+        m.bindPopup(`
+          <div style="font-family:Inter; min-width:180px;">
+            <b>${issue.category}</b> — <span style="color:${color}; font-weight:bold;">${issue.status}</span><br>
+            <img src="${issue.image_url}" style="width:100%;height:110px;object-fit:cover;border-radius:6px;margin:6px 0;">
+            <div style="font-size:12px;color:#333;">${issue.description_en || ''}</div>
+            <div style="font-size:11px;color:#888;margin-top:4px;">Severity: ${issue.severity || 'N/A'}</div>
+          </div>
+        `);
+        mapMarkers.push(m);
+        bounds.extend([issue.latitude, issue.longitude]);
+      });
+
+      if (mapMarkers.length) publicMap.fitBounds(bounds, { padding: [30, 30] });
+    } catch (e) { console.error('Radar load failed', e); }
+  }
+
+  // ── Track ticket ───────────────────────────────────────────────────────
+  async function trackTicket() {
+    const ticketId = document.getElementById('trackInput').value.trim().toUpperCase();
+    const errorEl  = document.getElementById('trackError');
+    const resultEl = document.getElementById('trackResult');
+    const reportedEvidenceBox = document.getElementById('reportedEvidenceBox');
+    errorEl.style.display  = 'none';
+    resultEl.style.display = 'none';
+    reportedEvidenceBox.style.display = 'none';
+
+    if (!ticketId) { showError(errorEl, 'Please enter a ticket ID.'); return; }
+
+    try {
+      const res  = await fetch(`/api/track_issue/${ticketId}`);
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('tStatus').textContent = data.issue.status;
+        document.getElementById('tCat').textContent    = data.issue.category;
+        document.getElementById('tDesc').textContent   = data.issue.description_en || '—';
+        
+        // Dynamic binding to load target issue image layout safely
+        if (data.issue.image_url) {
+          document.getElementById('imgReported').src = data.issue.image_url;
+          reportedEvidenceBox.style.display = 'block';
+        }
+        
+        resultEl.style.display = 'block';
+
+        const compBox = document.getElementById('comparisonBox');
+        if (data.issue.status === 'Resolved' && data.issue.resolved_image_url) {
+          document.getElementById('imgBefore').src = data.issue.image_url;
+          document.getElementById('imgAfter').src  = data.issue.resolved_image_url;
+          document.getElementById('tScore').textContent = data.issue.resolution_score || '—';
+          compBox.style.display = 'block';
+        } else {
+          compBox.style.display = 'none';
+        }
+      } else { showError(errorEl, data.error || 'Ticket not found.'); }
+    } catch (e) { showError(errorEl, 'Network error — please try again.'); }
+  }
+
+  function showError(el, msg) {
+    el.textContent    = msg;
+    el.style.display  = 'block';
+  }
+
+  // ── Image upload → AI analysis ─────────────────────────────────────────
+  document.getElementById('imageInput').addEventListener('change', function () {
+    if (!this.files.length) return;
+
+    const phone = document.getElementById('userPhone').value.trim();
+    if (!phone) {
+      alert('Please enter your mobile number first (for Gamification Badges).');
+      this.value = '';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('step1').style.display   = 'none';
+
+        const fd = new FormData();
+        fd.append('image', this.files[0]);
+
+        try {
+          const res  = await fetch('/api/analyze_image', { method: 'POST', body: fd });
+          const data = await res.json();
+          document.getElementById('loading').style.display = 'none';
+
+          if (!data.success) {
+            alert('Server error during analysis. Please try again.');
+            resetToStep1();
+            return;
+          }
+
+          if (data.category === 'Error') {
+            alert('⚠️ Gemini AI is temporarily offline, but you can still submit your report manually.');
+            aiPayload = {
+              temp_image_name: data.temp_image_name, category: 'Other', severity: 'Medium',
+              description_en: 'Manual report (AI offline)', description_hi: 'Manual report (AI offline)',
+              lat: pos.coords.latitude, lon: pos.coords.longitude,
+            };
+            document.getElementById('aiSeverity').textContent = 'Medium';
+            document.getElementById('aiDescEn').textContent   = 'Manual report (AI offline)';
+            document.getElementById('aiDescHi').textContent   = 'Manual report (AI offline)';
+            document.getElementById('categorySelect').value   = 'Other';
+            document.getElementById('confirmationBox').style.display = 'block';
+            return;
+          }
+
+          // === CLEAN UI MAPPING BLOCK (Duplicates Removed) ===
+          aiPayload = {
+            temp_image_name: data.temp_image_name, 
+            category: (data.category === 'Fake' || !data.category) ? 'Other' : data.category, 
+            severity: (data.category === 'Fake') ? 'Manual Review' : (data.severity || 'Medium'),
+            description_en: data.description_en || 'Issue detected', 
+            description_hi: data.description_hi || 'समस्या मिली',
+            lat: pos.coords.latitude, 
+            lon: pos.coords.longitude,
+          };
+
+          document.getElementById('aiSeverity').textContent = aiPayload.severity;
+          document.getElementById('aiDescEn').textContent   = aiPayload.description_en;
+          document.getElementById('aiDescHi').textContent   = aiPayload.description_hi;
+
+          const catSel = document.getElementById('categorySelect');
+          if ([...catSel.options].some(o => o.value === aiPayload.category)) {
+            catSel.value = aiPayload.category;
+          } else {
+            catSel.value = 'Other';
+          }
+
+          document.getElementById('confirmationBox').style.display = 'block';
+
+        } catch (e) {
+          document.getElementById('loading').style.display = 'none';
+          alert('Network error. Please check your connection and try again.');
+          resetToStep1();
+        }
+      },
+      () => {
+        alert('GPS access denied. Please enable location to submit a report.');
+        this.value = '';
+      },
+      { enableHighAccuracy: true }
+    );
+  });
+
+  function resetToStep1() {
+    document.getElementById('imageInput').value        = '';
+    document.getElementById('step1').style.display     = 'block';
+    document.getElementById('loading').style.display   = 'none';
+    document.getElementById('confirmationBox').style.display = 'none';
+  }
+
+  // ── Final submit ───────────────────────────────────────────────────────
+  document.getElementById('submitFinalBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('submitFinalBtn');
+    btn.disabled    = true;
+    btn.textContent = 'Submitting…';
+
+    try {
+      const res = await fetch('/api/submit_issue', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // === FIXED PAYLOAD (Duplicates Removed) ===
+        body: JSON.stringify({
+          temp_image_name: aiPayload.temp_image_name, 
+          category: document.getElementById('categorySelect').value,
+          severity: aiPayload.severity, 
+          description_en: aiPayload.description_en, 
+          description_hi: aiPayload.description_hi,
+          latitude: aiPayload.lat, 
+          longitude: aiPayload.lon, 
+          phone: document.getElementById('userPhone').value.trim(),
+          city: "Bareilly",
+          state: "Uttar Pradesh",
+          pincode: "243001"
+        }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('confirmationBox').style.display = 'none';
+        document.getElementById('resultBox').style.display       = 'block';
+        document.getElementById('ticketDisplay').textContent     = data.ticket_id;
+        document.getElementById('userBadge').textContent         = data.badge;
+      } else {
+        alert('Submission failed. Please try again.');
+        btn.disabled = false; btn.textContent = 'Confirm & Escalate Report';
+      }
+    } catch (e) {
+      alert('Server error. Please try again.');
+      btn.disabled = false; btn.textContent = 'Confirm & Escalate Report';
+    }
+  });
+
+  // ── Auto-Switch Logic ──
+  window.onload = function() {
+    const hash = window.location.hash;
+    if (hash === '#trackSection') { switchTab('track'); } 
+    else if (hash === '#radarSection') { switchTab('radar'); } 
+    else { switchTab('report'); }
+  };
+  // ── Image Lightbox Logic ──
+function openImageModal(imgSrc) {
+    if (!imgSrc) return;
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('enlargedImage');
+    
+    modalImg.src = imgSrc;
+    modal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    document.getElementById('enlargedImage').src = ''; // Memory clear
+}
+
+// Optional: Background click karne par bhi close ho jaye
+document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target === this) closeImageModal();
+});
+</script>
+<!-- Full-Screen Image Lightbox Modal -->
+<div id="imageModal" class="fixed inset-0 z-[100] hidden bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300">
+    <!-- Close Button -->
+    <button onclick="closeImageModal()" class="absolute top-6 right-6 text-white bg-slate-800 hover:bg-red-500 rounded-full p-2 transition shadow-lg focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+    <!-- Enlarged Image -->
+    <img id="enlargedImage" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-slate-700" src="" alt="Enlarged view">
+</div>
+</body>
+</html>

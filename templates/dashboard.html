@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nagrik.ai — Officer Command Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary: #1E293B; --bg: #F1F5F9; --card: #FFFFFF;
+      --text: #0F172A; --border: #E2E8F0; --accent: #0066FF;
+      --success: #10B981; --warning: #F59E0B; --danger: #EF4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg);
+      color: var(--text); display: flex; height: 100vh; overflow: hidden;
+    }
+
+    .sidebar {
+      width: 460px; background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,.05);
+    }
+
+    .header { padding: 20px; background: var(--primary); color: white; }
+    .header h2 { font-size: 20px; font-weight: 700; }
+    .live-badge {
+      background: var(--success); font-size: 11px;
+      padding: 2px 8px; border-radius: 12px; font-weight: 600;
+      margin-left: 8px; vertical-align: middle;
+    }
+    .header p { margin-top: 4px; font-size: 13px; color: #CBD5E1; }
+    .header a  { color: var(--danger); font-size: 12px; text-decoration: none; display: inline-block; margin-top: 8px; }
+    .header a:hover { text-decoration: underline; }
+
+    /* Jurisdiction Filter Box */
+    .jurisdiction-filter {
+      padding: 12px 14px; background: #f8fafc; border-bottom: 1px solid var(--border);
+      display: flex; gap: 8px;
+    }
+    .jurisdiction-filter select {
+      flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600;
+    }
+
+    .stats-row {
+      display: flex; gap: 10px; padding: 14px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+    }
+    .stat-card {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px; text-align: center;
+    }
+    .stat-card h4 { font-size: 10px; color: #64748B; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card p  { font-size: 22px; font-weight: 700; margin-top: 4px; color: var(--primary); }
+
+    .issue-list { flex: 1; overflow-y: auto; padding: 14px; }
+    .issue-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px; margin-bottom: 14px;
+      cursor: pointer; transition: border-color .15s, box-shadow .15s;
+    }
+    .issue-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,102,255,.08); }
+
+    .issue-header  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .ticket-id     { font-weight: 700; color: var(--accent); font-size: 13px; }
+
+    .severity-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+    .sev-high   { background: #fee2e2; color: #991b1b; }
+    .sev-medium { background: #fef3c7; color: #92400e; }
+    .sev-low    { background: #dcfce7; color: #166534; }
+
+    .status-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .pill-reported    { background: #fee2e2; color: #991b1b; }
+    .pill-in-progress { background: #fef3c7; color: #92400e; }
+    .pill-resolved    { background: #dcfce7; color: #166534; }
+
+    .score-badge {
+      margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--success);
+      padding: 6px 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; display: inline-block;
+    }
+
+    .status-controls { background: var(--card); padding: 12px; border-radius: 8px; margin-top: 10px; border: 1px solid var(--border); }
+    .status-controls select { width: 100%; padding: 9px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; font-size: 14px; }
+    .file-input-label { display: none; font-size: 12px; color: #475569; margin-bottom: 6px; font-weight: 600; }
+
+    .update-btn {
+      width: 100%; padding: 10px; background: var(--primary); color: white;
+      border: none; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px;
+    }
+    .update-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    .map-container { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; }
+    .leaflet-popup-content img { width: 100%; height: 130px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="header">
+    <h2>Nagrik.ai <span class="live-badge">LIVE</span></h2>
+    <p>{{ department }} Command Center</p>
+    <a href="/logout">← Log Out</a>
+  </div>
+
+  <!-- Jurisdiction Multi-Tier Filter UI Layout Block (Added Major States and Cities Dynamically) -->
+  <div class="jurisdiction-filter">
+      <select id="stateFilter" onchange="updateCityDropdown()">
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Delhi">Delhi</option>
+          <option value="Maharashtra">Maharashtra</option>
+      </select>
+      <select id="cityFilter" onchange="handleCityChange()">
+          <!-- Populated dynamically via JS -->
+      </select>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><h4>Total</h4>  <p id="statTotal">—</p></div>
+    <div class="stat-card"><h4>Pending</h4><p id="statPending" style="color:var(--warning);">—</p></div>
+    <div class="stat-card"><h4>Resolved</h4><p id="statResolved" style="color:var(--success);">—</p></div>
+  </div>
+
+  <div class="issue-list" id="issueContainer">
+    <div style="text-align:center; padding:30px; color:#64748B;">Loading local issues…</div>
+  </div>
+</div>
+
+<div class="map-container">
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Dynamic City Coordinates Setup for Direct Fluid Map Zoom
+  const cityCoordinates = {
+    "Bareilly": [28.3670, 79.4304],
+    "Meerut": [28.9845, 77.7064],
+    "Lucknow": [26.8467, 80.9462],
+    "Noida": [28.5355, 77.3910],
+    "Ghaziabad": [28.6692, 77.4538],
+    "Kanpur": [26.4499, 80.3319],
+    "Agra": [27.1767, 78.0081],
+    "Varanasi": [25.3176, 83.0062],
+    "Prayagraj": [25.4358, 81.8463],
+    "Gorakhpur": [26.7606, 83.3731],
+    "Jhansi": [25.4484, 78.5685],
+    "Aligarh": [27.8974, 78.0880],
+    "Moradabad": [28.8351, 78.7743],
+    "Mathura": [27.4924, 77.6737],
+    "New Delhi": [28.6139, 77.2090],
+    "North Delhi": [28.7500, 77.1167],
+    "South Delhi": [28.4900, 77.2100],
+    "Mumbai": [19.0760, 72.8777],
+    "Pune": [18.5204, 73.8567],
+    "Nagpur": [21.1458, 79.0882],
+    "Thane": [19.2183, 72.9781]
+  };
+
+  const stateCities = {
+    "Uttar Pradesh": ["Meerut", "Bareilly", "Lucknow", "Noida", "Ghaziabad", "Kanpur", "Agra", "Varanasi", "Prayagraj", "Gorakhpur", "Jhansi", "Aligarh", "Moradabad", "Mathura"],
+    "Delhi": ["New Delhi", "North Delhi", "South Delhi"],
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane"]
+  };
+
+  const map = L.map('map').setView([28.3670, 79.4304], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+
+  let mapMarkers = [];
+
+  function updateCityDropdown() {
+    const state = document.getElementById('stateFilter').value;
+    const citySelect = document.getElementById('cityFilter');
+    citySelect.innerHTML = '';
+
+    stateCities[state].forEach(city => {
+      const opt = document.createElement('option');
+      opt.value = city;
+      opt.textContent = city;
+      citySelect.appendChild(opt);
+    });
+
+    handleCityChange();
+  }
+
+  function handleCityChange() {
+    const selectedCity = document.getElementById('cityFilter').value;
+    if (cityCoordinates[selectedCity]) {
+      map.flyTo(cityCoordinates[selectedCity], 12, { animate: true, duration: 1.5 });
+    }
+    fetchIssues();
+  }
+
+  async function fetchIssues() {
+    try {
+      const selectedCity = document.getElementById('cityFilter').value;
+      const res  = await fetch(`/api/get_all_issues?city=${encodeURIComponent(selectedCity)}`);
+      const data = await res.json();
+
+      if (data.success) {
+          renderDashboard(data.issues);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  function severityClass(sev) {
+    if (!sev) return 'sev-low';
+    // String() lagane se chahe database me koi bhi format ho, wo pehle text banega fir lowercase hoga
+    const s = String(sev).toLowerCase(); 
+    if (s.includes('high'))   return 'sev-high';
+    if (s.includes('medium')) return 'sev-medium';
+    return 'sev-low';
+  }
+
+  function pillClass(status) {
+    if (!status) return 'pill-reported';
+    const s = String(status);
+    if (s.includes('Resolved'))    return 'pill-resolved';
+    if (s.includes('In Progress')) return 'pill-in-progress';
+    return 'pill-reported';
+  }
+
+  function markerColor(status) {
+    if (!status) return 'red';
+    const s = String(status);
+    if (s.includes('Resolved'))    return 'green';
+    if (s.includes('In Progress')) return 'orange';
+    return 'red';
+  }
+
+  // === BULLETPROOF RENDER FUNCTION ===
+  function renderDashboard(issues) {
+    const container = document.getElementById('issueContainer');
+    container.innerHTML = '';
+    
+    // Security Helper: HTML Injection rokne ke liye
+    function escapeHTML(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[m]));
+    }
+
+    try { mapMarkers.forEach(m => map.removeLayer(m)); } catch(e){}
+    mapMarkers = [];
+
+    if (!issues || issues.length === 0) {
+      document.getElementById('statTotal').textContent = 0;
+      document.getElementById('statPending').textContent = 0;
+      document.getElementById('statResolved').textContent = 0;
+      container.innerHTML = '<p style="text-align:center;margin-top:30px;color:#64748B;">No open cases in this city! 🌿</p>';
+      return;
+    }
+
+    document.getElementById('statTotal').textContent = issues.length;
+    document.getElementById('statResolved').textContent = issues.filter(i => i.status === 'Resolved').length;
+    document.getElementById('statPending').textContent = issues.length - issues.filter(i => i.status === 'Resolved').length;
+
+    const bounds = L.latLngBounds();
+
+    issues.forEach(issue => {
+      try {
+        const card = document.createElement('div');
+        card.className = 'issue-card';
+
+        // Securely create content
+        const scoreHTML = (issue.status === 'Resolved' && issue.resolution_score) ? `<div class="score-badge">🤖 AI Match: ${escapeHTML(issue.resolution_score)}</div>` : '';
+
+        card.innerHTML = `
+          <div class="issue-header">
+            <span class="ticket-id">#${escapeHTML(issue.ticket_id || 'MISSING-ID')}</span>
+            <span class="severity-badge ${severityClass(issue.severity)}">${escapeHTML(issue.severity || 'N/A')}</span>
+          </div>
+          <div style="font-size:13px;color:#334155;margin-bottom:4px;">${escapeHTML(issue.description_en || 'No description available')}</div>
+          <div style="font-size:11px;color:#94A3B8;margin-bottom:8px;">📌 Area Pincode: ${escapeHTML(issue.pincode || '—')}</div>
+          <div style="font-size:11px;color:#94A3B8;display:flex;gap:8px;align-items:center;">
+            <span class="status-pill ${pillClass(issue.status)}">${escapeHTML(issue.status || 'Reported')}</span>
+            <span>Reported: ${escapeHTML(issue.created_at || 'N/A')}</span>
+          </div>
+          ${scoreHTML}
+          <div class="status-controls" onclick="event.stopPropagation()">
+            <select id="status_${escapeHTML(issue.ticket_id)}" onchange="toggleFileInput('${escapeHTML(issue.ticket_id)}')">
+              <option value="Reported"    ${issue.status === 'Reported'     ? 'selected' : ''}>📋 Reported</option>
+              <option value="In Progress" ${issue.status === 'In Progress'  ? 'selected' : ''}>🔧 In Progress</option>
+              <option value="Resolved"    ${issue.status === 'Resolved'     ? 'selected' : ''}>✅ Resolved (AI Verify)</option>
+            </select>
+            <label class="file-input-label" id="filelabel_${escapeHTML(issue.ticket_id)}">
+              📷 Upload Repair Photo:
+              <input type="file" id="file_${escapeHTML(issue.ticket_id)}" accept="image/*">
+            </label>
+            <button class="update-btn" id="btn_${escapeHTML(issue.ticket_id)}" onclick="updateStatus('${escapeHTML(issue.ticket_id)}')">Save Status</button>
+          </div>
+          button onclick="forwardIssue('${issue.ticket_id}')" 
+        class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mt-2 w-full">
+    Forward / Reject
+</button>
+        `;
+
+        container.appendChild(card);
+
+        let lat = parseFloat(issue.latitude);
+        let lon = parseFloat(issue.longitude);
+
+        if (!isNaN(lat) && !isNaN(lon)) {
+          card.addEventListener('click', () => { try { map.flyTo([lat, lon], 16); } catch(e){} });
+          const color = markerColor(issue.status);
+          const icon  = new L.Icon({
+            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34],
+          });
+          const m = L.marker([lat, lon], { icon }).addTo(map);
+          m.bindPopup(`<b>#${escapeHTML(issue.ticket_id || 'ID N/A')}</b><br><img src="${escapeHTML(issue.image_url || '')}" style="width:100%;height:100px;object-fit:cover;margin-top:5px;"><div style="font-size:12px;margin-top:5px;">${escapeHTML(issue.description_en || '')}</div>`);
+          mapMarkers.push(m);
+          bounds.extend([lat, lon]);
+        }
+      } catch (err) {
+        console.error("Rendering error", err);
+      }
+    });
+
+    if (mapMarkers.length > 0) {
+      try { map.fitBounds(bounds, { padding: [50, 50] }); } catch(e){}
+    }
+  }
+  // === END BULLETPROOF RENDER FUNCTION ===
+
+  function toggleFileInput(ticketId) {
+    const sel   = document.getElementById(`status_${ticketId}`);
+    const label = document.getElementById(`filelabel_${ticketId}`);
+    label.style.display = sel.value === 'Resolved' ? 'block' : 'none';
+  }
+
+  async function updateStatus(ticketId) {
+    const sel  = document.getElementById(`status_${ticketId}`);
+    const btn  = document.getElementById(`btn_${ticketId}`);
+    const file = document.getElementById(`file_${ticketId}`);
+
+    if (sel.value === 'Resolved' && !file.files.length) {
+      alert('Upload photo required.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('ticket_id', ticketId);
+    fd.append('status',    sel.value);
+    if (sel.value === 'Resolved') fd.append('after_image', file.files[0]);
+
+    btn.disabled = true; btn.textContent = 'Processing...';
+
+    try {
+      const res  = await fetch('/api/resolve_with_ai', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) { fetchIssues(); }
+      else { alert('Error: ' + data.error); btn.disabled = false; }
+    } catch { btn.disabled = false; }
+  }
+
+  updateCityDropdown();
+</script>
+</body>
+</html>

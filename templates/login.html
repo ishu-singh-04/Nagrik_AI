@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Officer Portal — Nagrik.ai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- YAHAN YE LINE ADD KAR DO -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Officer Portal — Nagrik.ai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1E293B; --bg: #F1F5F9; --card: #FFFFFF;
+      --text: #0F172A; --border: #E2E8F0; --accent: #0066FF;
+      --danger: #EF4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif; background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+
+    .login-box {
+      background: var(--card); padding: 40px; border-radius: 16px;
+      box-shadow: 0 24px 48px rgba(0,0,0,.25);
+      width: 100%; max-width: 360px; text-align: center;
+    }
+
+    /* Logo mark */
+    .logo {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px; background: var(--accent); color: white;
+      border-radius: 14px; font-size: 16px; font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    h2 { font-size: 22px; font-weight: 700; color: var(--text); }
+    .subtitle { color: #64748B; font-size: 14px; margin: 6px 0 28px; }
+
+    /* Error alert */
+    .error-alert {
+      background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b;
+      border-radius: 8px; padding: 10px 14px; font-size: 13px;
+      margin-bottom: 16px; display: none; text-align: left;
+    }
+
+    /* Inputs */
+    .field { margin-bottom: 14px; text-align: left; }
+    .field label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
+    .field input {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+      border-radius: 8px; font-family: inherit; font-size: 14px; color: var(--text);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field input:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,102,255,.1);
+    }
+
+    /* Button */
+    .btn {
+      width: 100%; padding: 13px; background: var(--accent); color: white;
+      border: none; border-radius: 8px; font-weight: 700; font-size: 15px;
+      cursor: pointer; margin-top: 4px; transition: background .2s;
+    }
+    .btn:hover:not(:disabled) { background: #0052cc; }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Demo creds */
+    .demo-creds {
+      margin-top: 24px; font-size: 12px; color: #64748B;
+      background: #F8FAFC; padding: 12px 14px; border-radius: 8px;
+      border: 1px solid var(--border); text-align: left; line-height: 1.8;
+    }
+    .demo-creds strong { color: var(--text); display: block; margin-bottom: 4px; }
+    .demo-creds code {
+      background: #E2E8F0; padding: 1px 5px; border-radius: 4px;
+      font-size: 11px; font-family: monospace;
+    }
+
+    /* Back link */
+    .back-link {
+      display: block; margin-top: 18px; font-size: 13px;
+      color: #64748B; text-decoration: none;
+    }
+    .back-link:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Close Button for Login Page -->
+<a href="/" class="absolute top-6 right-6 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-md flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 transition z-50" title="Back to Portal">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    </svg>
+</a>
+
+<div class="login-box">
+  <div class="logo">Nai</div>
+  <h2>Officer Portal</h2>
+  <p class="subtitle">Secure Command Center Access</p>
+
+  <div class="error-alert" id="errorMsg">Invalid credentials. Please try again.</div>
+
+  <div class="field">
+    <label for="email">Official Email ID</label>
+    <input type="email" id="email" placeholder="admin@dept.gov.in" autocomplete="email" required>
+  </div>
+  <div class="field">
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+  </div>
+
+  <button class="btn" id="loginBtn" onclick="doLogin()">Authenticate</button>
+
+  <div class="demo-creds">
+    <strong>Demo Accounts (password: <code>admin123</code>)</strong>
+    UPPCL (Electricity): <code>admin@uppcl.gov.in</code><br>
+    PWD (Pothole): <code>admin@pwd.gov.in</code><br>
+    Jal Nigam (Water): <code>admin@jalnigam.gov.in</code><br>
+    Nagar Nigam (Waste): <code>admin@nagarnigam.gov.in</code>
+  </div>
+
+  <a href="/" class="back-link">← Back to Citizen Portal</a>
+</div>
+
+<script>
+  // Allow Enter key to submit
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  async function doLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('loginBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (!email || !password) {
+      showError('Please enter both email and password.');
+      return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Verifying…';
+    errorMsg.style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/officer-login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        window.location.href = '/dashboard';
+      } else {
+        showError(data.error || 'Invalid credentials.');
+        btn.disabled    = false;
+        btn.textContent = 'Authenticate';
+      }
+    } catch (err) {
+      showError('Server error. Please try again.');
+      btn.disabled    = false;
+      btn.textContent = 'Authenticate';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent    = msg;
+    el.style.display  = 'block';
+  }
+</script>
+</body>
+</html>

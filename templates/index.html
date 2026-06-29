@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagrik.ai - Zero-Trust Civic Reporting</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandBlue: '#1e3a8a',
+                        brandLightBlue: '#3b82f6',
+                        brandOrange: '#ea580c',
+                        bgWhite: '#f8fafc',
+                        darkSection: '#0f172a'
+                    }
+                }
+            }
+        }
+
+        window.onload = () => {
+        setTimeout(() => {
+            document.getElementById('mockResult').classList.remove('hidden');
+        }, 2000); // 2 second mein result show karega
+    };
+    </script>
+</head>
+<body class="bg-bgWhite text-gray-800 font-sans antialiased">
+
+    <!-- NAVIGATION -->
+    <nav class="flex items-center justify-between px-10 py-5 bg-white shadow-sm sticky top-0 z-50">
+
+<div class="hidden md:flex space-x-6 text-sm font-semibold text-gray-600">
+    <a href="#" class="text-brandLightBlue bg-blue-50 px-3 py-1 rounded-full">Home</a>
+    <a href="/portal#reportSection" class="hover:text-brandLightBlue py-1">Report Issue</a>
+    <a href="/portal#trackSection" class="hover:text-brandLightBlue py-1">Track Status</a>
+    <a href="/portal#radarSection" class="hover:text-brandLightBlue py-1">Live Radar</a>
+</div>
+        <a href="/officer-login" class="px-5 py-2 text-sm font-semibold text-white bg-darkSection rounded-lg hover:bg-gray-800 transition">
+            🛡️ Department Login
+        </a>
+    </nav>
+
+   <!-- HERO SECTION (Gradient Blue to Off-White Theme) -->
+    <section class="bg-gradient-to-b from-[#1e3a8a] via-[#2563eb] to-[#f8fafc] pt-20 pb-16 px-10 relative overflow-hidden">
+        <!-- Background decorative blob -->
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-blue-900 opacity-40 blur-3xl"></div>
+        
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
+            <div>
+                <span class="px-3 py-1 text-xs font-semibold tracking-wide border border-blue-300 text-blue-100 bg-blue-900/30 rounded-full backdrop-blur-sm">⚡ AI-POWERED CIVIC PORTAL</span>
+                <h1 class="text-5xl font-extrabold mt-6 leading-tight text-white">
+                    Building a <span class="text-blue-300">Cleaner,<br>Smarter & Safer</span><br>Society Together
+                </h1>
+                <p class="mt-6 text-lg text-blue-50 max-w-lg">
+                    Report civic issues in your area — potholes, water leaks, power outages & more. Every complaint reaches the right authority instantly and is tracked to resolution.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <!-- Report Button with Camera SVG -->
+                    <!-- Line 50 ke aas paas Hero buttons ko isse replace karo -->
+                    <a href="/portal#reportSection" class="px-6 py-3 bg-white text-brandBlue font-bold rounded-lg hover:bg-gray-100 transition flex items-center shadow-lg border border-gray-200">
+                    Report an Issue
+                    </a>
+                    <a href="/portal#trackSection" class="px-6 py-3 bg-transparent border-2 border-white/80 text-white font-bold rounded-lg hover:bg-white hover:text-brandBlue transition flex items-center">
+                    Track Complaint
+                    </a>
+                    <a href="/portal#radarSection" class="px-6 py-3 bg-brandOrange text-white font-bold rounded-lg hover:bg-orange-600 transition shadow-lg flex items-center">
+                    Live Radar
+                    </a>
+                </div>
+            </div>
+            
+            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+                <img src="{{ url_for('static', filename='images/hero.png') }}" alt="Citizen reporting issue" class="w-full h-80 object-cover opacity-95 hover:scale-105 transition duration-500">
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent p-6 border-t border-gray-700/50">
+                    <p class="text-white font-bold">Responsible Citizens Build Better Cities</p>
+                    <p class="text-sm text-gray-300 mt-1">Together we create clean & safe infrastructure for all</p>
+                    <p class="text-xs text-green-400 mt-2 flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                        Live — 42 issues active in Meerut
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS (Updated text colors for off-white background) -->
+        <div class="max-w-7xl mx-auto mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-gray-200 pt-8 relative z-10 text-gray-800">
+            <div>
+                <p class="text-4xl font-extrabold text-brandBlue">4,218</p>
+                <p class="text-sm font-semibold text-gray-500 mt-1">Issues Reported</p>
+            </div>
+            <div>
+                <p class="text-4xl font-extrabold text-brandBlue">3,891</p>
+                <p class="text-sm font-semibold text-gray-500 mt-1">Resolved</p>
+            </div>
+            <div>
+                <p class="text-4xl font-extrabold text-green-600">92%</p>
+                <p class="text-sm font-semibold text-gray-500 mt-1">Resolution Rate</p>
+            </div>
+            <div>
+                <p class="text-4xl font-extrabold text-brandBlue">48h</p>
+                <p class="text-sm font-semibold text-gray-500 mt-1">Avg. Turnaround</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 1: ACTION CARDS (Detailed UI matching 4th image) -->
+    <section class="max-w-7xl mx-auto px-10 py-20">
+        <span class="px-3 py-1 text-xs font-bold text-gray-500 bg-gray-100 rounded-full">CITIZEN PORTAL</span>
+        <h2 class="text-3xl font-bold text-gray-900 mt-4">What Would You Like to Do?</h2>
+        <p class="text-gray-500 mt-2 mb-10">Three simple tools for every responsible citizen</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Card 1: Report an Issue -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-brandLightBlue">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-900">Report an Issue</h3>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-6">Capture a civic problem with photo & GPS</p>
+                    
+                    <input type="text" placeholder="Your Mobile Number" class="w-full bg-gray-50 border border-gray-200 text-sm px-4 py-2.5 rounded-lg mb-4 outline-none focus:border-brandLightBlue">
+                    
+                   <!-- Yeh manual chips hata kar ye chipka do -->
+<div id="aiSimulationSlate" class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 text-left">
+    <div class="flex items-center space-x-2 mb-2">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <p class="text-[10px] font-bold text-blue-800 uppercase">AI Processing Live...</p>
+    </div>
+    <div id="mockResult" class="hidden">
+        <p class="text-xs font-bold text-gray-700">Detected: <span class="text-brandLightBlue">Pothole</span></p>
+        <p class="text-[11px] text-gray-500 mt-1 italic">"Large pothole detected on sector-7 main road. Urgent repair required."</p>
+    </div>
+</div>
+
+                    <div class="border-2 border-dashed border-blue-200 rounded-lg py-8 text-center bg-blue-50/50 mb-6 flex flex-col items-center cursor-pointer hover:bg-blue-50 transition">
+                        <svg class="w-6 h-6 text-brandLightBlue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <p class="text-brandLightBlue font-bold text-sm">Capture Issue Photo</p>
+                        <p class="text-xs text-gray-400 mt-1">Live camera + GPS location required</p>
+                    </div>
+                </div>
+                <a href="/portal#reportSection" class="block w-full text-center py-3 bg-brandLightBlue text-white font-bold rounded-lg hover:bg-blue-600 transition shadow-sm flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    Submit Report
+                </a>
+            </div>
+
+            <!-- Card 2: Track Issue Status -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-900">Track Issue Status</h3>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-6">Enter ticket ID to see real-time updates</p>
+                    
+                    <div class="flex space-x-2 mb-4">
+                        <input type="text" value="NAGRIK-4701" class="w-full bg-gray-50 border border-gray-200 text-sm font-semibold px-4 py-2.5 rounded-lg outline-none" readonly>
+                        <button class="bg-green-500 text-white px-4 rounded-lg font-bold hover:bg-green-600 transition">Track</button>
+                    </div>
+
+                    <div class="bg-green-50/50 border border-green-100 p-4 rounded-lg mb-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="font-bold text-brandLightBlue">#NAGRIK-4701</p>
+                            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">Resolved</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">Category: Pothole — Ward 14, Sector 7</p>
+                        <p class="text-xs font-bold text-green-600">AI Verified: 85% match</p>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <div class="w-1/2">
+                            <p class="text-xs text-gray-400 mb-1">Before</p>
+                            <img src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=200" class="w-full h-20 object-cover rounded shadow-sm border border-gray-200" alt="Pothole">
+                        </div>
+                        <div class="w-1/2">
+                            <p class="text-xs text-gray-400 mb-1">After</p>
+                            <img src="{{ url_for('static', filename='images/road.png') }}" class="w-full h-20 object-cover rounded shadow-sm border border-gray-200" alt="Fixed road">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Live Radar -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-900">Live Radar</h3>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-6">See all civic issues reported near you</p>
+                    
+                    <!-- Simulated Map Grid -->
+                    <div class="h-40 bg-green-50 rounded-lg mb-4 border border-green-200 relative overflow-hidden flex items-center justify-center">
+                        <div class="absolute w-full h-full opacity-40" style="background-image: linear-gradient(#bbf7d0 1px, transparent 1px), linear-gradient(90deg, #bbf7d0 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        <!-- Axis lines -->
+                        <div class="absolute w-full h-0.5 bg-white opacity-60"></div>
+                        <div class="absolute h-full w-0.5 bg-white opacity-60"></div>
+                        
+                        <!-- Map Pins -->
+                        <div class="absolute w-3 h-3 bg-red-500 rounded-full shadow border border-white top-8 right-16"></div>
+                        <div class="absolute w-3 h-3 bg-orange-400 rounded-full shadow border border-white top-10 left-12"></div>
+                        <div class="absolute w-3 h-3 bg-green-500 rounded-full shadow border border-white bottom-12 left-20"></div>
+                        <div class="absolute w-3 h-3 bg-orange-400 rounded-full shadow border border-white bottom-8 right-10"></div>
+                        <p class="absolute bottom-2 right-2 text-[10px] text-green-700 font-bold opacity-50">Leaflet.js</p>
+                    </div>
+                    
+                    <div class="flex space-x-3 text-[10px] text-gray-500 font-bold uppercase mb-4">
+                        <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span> Resolved</span>
+                        <span class="flex items-center"><span class="w-2 h-2 bg-red-500 rounded-full mr-1"></span> Pending</span>
+                        <span class="flex items-center"><span class="w-2 h-2 bg-orange-400 rounded-full mr-1"></span> In Progress</span>
+                    </div>
+                </div>
+                <a href="/portal#radarSection" class="block w-full text-center py-3 bg-brandOrange text-white font-bold rounded-lg hover:bg-orange-600 transition shadow-sm flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    Open Full Map
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SECTION 2: CATEGORIES (With sleek, non-cartoonish SVGs) -->
+    <section class="bg-white max-w-7xl mx-auto px-10 py-10 border-t border-gray-100">
+        <span class="px-3 py-1 text-xs font-bold text-gray-500 bg-gray-100 rounded-full">COMPLAINT CATEGORIES</span>
+        <h2 class="text-3xl font-bold text-gray-900 mt-4">What Can You Report?</h2>
+        <p class="text-gray-500 mt-2 mb-10">Six civic issue types, each auto-routed to the right government department</p>
+        
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-brandLightBlue transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Electricity</p>
+            </div>
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-blue-500 transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Water</p>
+            </div>
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-yellow-600 transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Potholes</p>
+            </div>
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-green-600 transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Waste</p>
+            </div>
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-orange-600 transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M13 8h4a1 1 0 011 1v3h-3v-4z"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Roads</p>
+            </div>
+            
+            <div class="p-8 border border-gray-200 rounded-xl text-center hover:shadow-lg transition bg-gray-50 flex flex-col items-center cursor-pointer group">
+                <svg class="w-10 h-10 text-gray-700 group-hover:text-teal-600 transition mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                <p class="font-bold text-sm text-gray-900">Sewage</p>
+            </div>
+            
+        </div>
+    </section>
+
+ <!-- SECTION 3: HOW IT WORKS (With Perfect Connecting Line) -->
+    <section class="max-w-7xl mx-auto px-10 py-20 border-t border-gray-100">
+        <span class="px-3 py-1 text-xs font-bold text-brandLightBlue bg-blue-100 rounded-full">PORTAL GUIDE</span>
+        <h2 class="text-3xl font-bold text-gray-900 mt-4 mb-16">How to Use Nagrik.ai</h2>
+        
+        <!-- Steps Container -->
+        <div class="relative grid grid-cols-1 md:grid-cols-4 gap-8">
+            
+            <!-- Horizontal Line for Desktop (hidden on mobile) -->
+            <div class="hidden md:block absolute top-6 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 z-0"></div>
+            
+            <!-- Step 1 -->
+            <div class="relative z-10 flex flex-col items-center text-center px-4">
+                <div class="w-12 h-12 bg-brandLightBlue text-white rounded-full flex items-center justify-center font-bold text-xl mb-4 border-4 border-bgWhite shadow-md">1</div>
+                <h3 class="font-bold text-gray-900 text-base">Open the Portal</h3>
+                <p class="text-sm text-gray-500 mt-2 max-w-[200px]">Visit Nagrik.ai on any device. No login required for citizens.</p>
+            </div>
+            
+            <!-- Step 2 -->
+            <div class="relative z-10 flex flex-col items-center text-center px-4">
+                <div class="w-12 h-12 bg-brandLightBlue text-white rounded-full flex items-center justify-center font-bold text-xl mb-4 border-4 border-bgWhite shadow-md">2</div>
+                <h3 class="font-bold text-gray-900 text-base">Capture the Issue</h3>
+                <p class="text-sm text-gray-500 mt-2 max-w-[200px]">Choose category and take a live photo with GPS on.</p>
+            </div>
+            
+            <!-- Step 3 -->
+            <div class="relative z-10 flex flex-col items-center text-center px-4">
+                <div class="w-12 h-12 bg-brandLightBlue text-white rounded-full flex items-center justify-center font-bold text-xl mb-4 border-4 border-bgWhite shadow-md">3</div>
+                <h3 class="font-bold text-gray-900 text-base">Get Your Ticket ID</h3>
+                <p class="text-sm text-gray-500 mt-2 max-w-[200px]">Receive a unique ID like NAGRIK-4701 to track your complaint.</p>
+            </div>
+            
+            <!-- Step 4 -->
+            <div class="relative z-10 flex flex-col items-center text-center px-4">
+                <div class="w-12 h-12 bg-brandLightBlue text-white rounded-full flex items-center justify-center font-bold text-xl mb-4 border-4 border-bgWhite shadow-md">4</div>
+                <h3 class="font-bold text-gray-900 text-base">Track Resolution</h3>
+                <p class="text-sm text-gray-500 mt-2 max-w-[200px]">Use your Ticket ID to see status, updates & AI verification.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- UPGRADED SECTION 4: ADMINISTRATIVE AI PIPELINE (Visual & Sleek) -->
+    <section class="bg-gray-950 text-white py-20 px-10 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="px-3 py-1 text-xs font-bold text-brandLightBlue bg-blue-950/60 border border-blue-900 rounded-full tracking-wide">BACKEND ARCHITECTURE</span>
+                <h2 class="text-3xl font-extrabold mt-4">Automated AI Governance Pipeline</h2>
+                <p class="text-gray-400 mt-2 text-sm">How Gemini 3.5 Flash processes, filters, and routes civic issues in real-time.</p>
+            </div>
+
+            <!-- Visual Feature Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Pipeline 1: Auto Detection & Classification -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-blue-500/30 transition group">
+                    <div class="p-3 bg-blue-950/80 border border-blue-800 text-brandLightBlue rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Scan/Brain SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m4-3H6"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">AI Auto-Classification</h3>
+                        <p class="text-xs font-semibold text-blue-400 mt-1">Powered by Gemini 3.5 Flash</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Instantly scans the uploaded image to auto-detect the issue type (Pothole, Waste, Water Leakage) without any manual tagging.</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline 2: Auto Summary & Anti-Spam -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-green-500/30 transition group">
+                    <div class="p-3 bg-green-950/80 border border-green-800 text-green-400 rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Summary/Document SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">AI Context & Smart Merge</h3>
+                        <p class="text-xs font-semibold text-green-400 mt-1">Bilingual Auto-Summarization</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Generates automated summaries in English & Hindi. Merges overlapping local reports into a single ticket with an active count to stop spam.</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline 3: Department Isolation -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-orange-500/30 transition group">
+                    <div class="p-3 bg-orange-950/80 border border-orange-800 text-brandOrange rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Shield/Isolate SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Department Isolation</h3>
+                        <p class="text-xs font-semibold text-brandOrange mt-1">Role-Based Access Guard</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Enforces zero cross-department data pollution. PWD officers only stream potholes, while Jal Board views strictly water utilities.</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline 4: Dynamic Time & ETA Allocator -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-purple-500/30 transition group">
+                    <div class="p-3 bg-purple-950/80 border border-purple-800 text-purple-400 rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Clock/Timer SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Dynamic ETA Allocator</h3>
+                        <p class="text-xs font-semibold text-purple-400 mt-1">Rule-Based Deadline Setup</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Automatically calculates SLA resolution clocks based on danger metrics (e.g., hanging wires get 24h, water leaks get 12h).</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline 5: Before/After Verification Audit -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-yellow-500/30 transition group">
+                    <div class="p-3 bg-yellow-950/80 border border-yellow-800 text-yellow-500 rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Check/Audit SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Dual-Image Resolution Audit</h3>
+                        <p class="text-xs font-semibold text-yellow-500 mt-1">Computer-Vision Verification</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Compares the officer's 'After' image against the citizen's 'Before' image using multi-modal AI to calculate an automated confidence score.</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline 6: Geo-Spatial Tracking (Pincode & City) -->
+                <div class="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl flex items-start space-x-4 hover:border-teal-500/30 transition group">
+                    <div class="p-3 bg-teal-950/80 border border-teal-800 text-teal-400 rounded-xl group-hover:scale-110 transition shrink-0">
+                        <!-- Location/Pin SVG Icon -->
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Geo-Spatial Telemetry</h3>
+                        <p class="text-xs font-semibold text-teal-400 mt-1">Reverse-Geocoded Reporting</p>
+                        <p class="text-sm text-gray-400 mt-3 leading-relaxed">Locks live GPS coordinates, mapping them instantly to state, city, and pincode tiers to power the localized administration dashboard.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: DEPARTMENTS & LOGIN -->
+    <section class="bg-darkSection text-white py-20 px-10 text-center border-b border-gray-800">
+        <h2 class="text-3xl font-bold mb-4">Powered by Accountability</h2>
+        <p class="text-gray-400 mb-10">Every complaint is automatically routed to the responsible government department</p>
+        
+        <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <p class="font-bold text-sm">DISCOM</p><p class="text-xs text-gray-400">Electricity Dept.</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <p class="font-bold text-sm">Jal Board</p><p class="text-xs text-gray-400">Water Supply</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <p class="font-bold text-sm">PWD</p><p class="text-xs text-gray-400">Roads & Infra</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <p class="font-bold text-sm">Nagar Nigam</p><p class="text-xs text-gray-400">Waste Management</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <p class="font-bold text-sm">Sewage Board</p><p class="text-xs text-gray-400">Drainage</p>
+            </div>
+        </div>
+
+       <a href="/officer-login" class="px-5 py-2 text-sm font-semibold text-white bg-darkSection rounded-lg hover:bg-gray-800 transition">
+            🛡️ Department Login
+        </a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#0b1120] text-gray-500 py-8 px-10 text-sm flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center space-x-2 mb-4 md:mb-0">
+            <div class="w-6 h-6 bg-brandLightBlue text-white font-bold flex items-center justify-center rounded text-xs">N</div>
+            <span class="font-bold text-gray-400">Nagrik.ai</span>
+        </div>
+        <p>&copy; 2026 Nagrik.ai — Building Accountable Infrastructure</p>
+        <div class="space-x-4 mt-4 md:mt-0">
+            <a href="#" class="hover:text-white">Privacy Policy</a>
+            <a href="#" class="hover:text-white">Terms of Use</a>
+        </div>
+    </footer>
+
+</body>
+</html>

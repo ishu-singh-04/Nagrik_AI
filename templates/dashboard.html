@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    
     :root {
       --primary: #1E293B; --bg: #F1F5F9; --card: #FFFFFF;
       --text: #0F172A; --border: #E2E8F0; --accent: #0066FF;
@@ -95,6 +96,39 @@
     .map-container { flex: 1; position: relative; }
     #map { width: 100%; height: 100%; }
     .leaflet-popup-content img { width: 100%; height: 130px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+  
+  /* Responsive Card Styling */
+.issue-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+/* Image Thumbnail - Mobile friendly fixed height */
+.issue-thumbnail {
+    width: 100%;
+    height: 180px; 
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+/* Button Styling */
+.action-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+  
   </style>
 </head>
 <body>
@@ -134,6 +168,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <script>
   // Dynamic City Coordinates Setup for Direct Fluid Map Zoom
   const cityCoordinates = {
@@ -172,27 +207,38 @@
   let mapMarkers = [];
 
   function updateCityDropdown() {
-    const state = document.getElementById('stateFilter').value;
-    const citySelect = document.getElementById('cityFilter');
-    citySelect.innerHTML = '';
+  const state = document.getElementById('stateFilter').value;
+  const citySelect = document.getElementById('cityFilter');
+  citySelect.innerHTML = '';
 
-    stateCities[state].forEach(city => {
-      const opt = document.createElement('option');
-      opt.value = city;
-      opt.textContent = city;
-      citySelect.appendChild(opt);
-    });
+  stateCities[state].forEach(city => {
+    const opt = document.createElement('option');
+    opt.value = city;
+    opt.textContent = city;
+    citySelect.appendChild(opt);
+  });
 
-    handleCityChange();
+  // --- NAYI LINES: Saved city ko dropdown mein waapas laane ke liye ---
+  const savedCity = localStorage.getItem('officerCity');
+  if (savedCity && stateCities[state].includes(savedCity)) {
+      citySelect.value = savedCity;
   }
+  // --------------------------------------------------------------------
 
+  handleCityChange();
+}
   function handleCityChange() {
-    const selectedCity = document.getElementById('cityFilter').value;
-    if (cityCoordinates[selectedCity]) {
-      map.flyTo(cityCoordinates[selectedCity], 12, { animate: true, duration: 1.5 });
-    }
-    fetchIssues();
+  const selectedCity = document.getElementById('cityFilter').value;
+  
+  // --- New Line : bowseer use local storage to know ki tum kis city me the ---
+  localStorage.setItem('officerCity', selectedCity); 
+  // ------------------------------------------------------
+
+  if (cityCoordinates[selectedCity]) {
+    map.flyTo(cityCoordinates[selectedCity], 12, { animate: true, duration: 1.5 });
   }
+  fetchIssues();
+}
 
   async function fetchIssues() {
     try {
@@ -231,12 +277,9 @@
     return 'red';
   }
 
-  // === BULLETPROOF RENDER FUNCTION ===
-  function renderDashboard(issues) {
+function renderDashboard(issues) {
     const container = document.getElementById('issueContainer');
-    container.innerHTML = '';
     
-    // Security Helper: HTML Injection rokne ke liye
     function escapeHTML(str) {
         if (!str) return '';
         return String(str).replace(/[&<>"']/g, m => ({
@@ -251,7 +294,7 @@
       document.getElementById('statTotal').textContent = 0;
       document.getElementById('statPending').textContent = 0;
       document.getElementById('statResolved').textContent = 0;
-      container.innerHTML = '<p style="text-align:center;margin-top:30px;color:#64748B;">No open cases in this city! 🌿</p>';
+      container.innerHTML = '<p style="text-align:center;margin-top:30px;color:#64748B;">No open cases in this city/department! 🌿</p>';
       return;
     }
 
@@ -266,38 +309,91 @@
         const card = document.createElement('div');
         card.className = 'issue-card';
 
-        // Securely create content
         const scoreHTML = (issue.status === 'Resolved' && issue.resolution_score) ? `<div class="score-badge">🤖 AI Match: ${escapeHTML(issue.resolution_score)}</div>` : '';
 
-        card.innerHTML = `
-          <div class="issue-header">
-            <span class="ticket-id">#${escapeHTML(issue.ticket_id || 'MISSING-ID')}</span>
-            <span class="severity-badge ${severityClass(issue.severity)}">${escapeHTML(issue.severity || 'N/A')}</span>
-          </div>
-          <div style="font-size:13px;color:#334155;margin-bottom:4px;">${escapeHTML(issue.description_en || 'No description available')}</div>
-          <div style="font-size:11px;color:#94A3B8;margin-bottom:8px;">📌 Area Pincode: ${escapeHTML(issue.pincode || '—')}</div>
-          <div style="font-size:11px;color:#94A3B8;display:flex;gap:8px;align-items:center;">
-            <span class="status-pill ${pillClass(issue.status)}">${escapeHTML(issue.status || 'Reported')}</span>
-            <span>Reported: ${escapeHTML(issue.created_at || 'N/A')}</span>
-          </div>
-          ${scoreHTML}
-          <div class="status-controls" onclick="event.stopPropagation()">
-            <select id="status_${escapeHTML(issue.ticket_id)}" onchange="toggleFileInput('${escapeHTML(issue.ticket_id)}')">
-              <option value="Reported"    ${issue.status === 'Reported'     ? 'selected' : ''}>📋 Reported</option>
-              <option value="In Progress" ${issue.status === 'In Progress'  ? 'selected' : ''}>🔧 In Progress</option>
-              <option value="Resolved"    ${issue.status === 'Resolved'     ? 'selected' : ''}>✅ Resolved (AI Verify)</option>
-            </select>
-            <label class="file-input-label" id="filelabel_${escapeHTML(issue.ticket_id)}">
-              📷 Upload Repair Photo:
-              <input type="file" id="file_${escapeHTML(issue.ticket_id)}" accept="image/*">
-            </label>
-            <button class="update-btn" id="btn_${escapeHTML(issue.ticket_id)}" onclick="updateStatus('${escapeHTML(issue.ticket_id)}')">Save Status</button>
-          </div>
-          button onclick="forwardIssue('${issue.ticket_id}')" 
-        class="bg-yellow-500 text-white px-2 py-1 rounded text-xs mt-2 w-full">
-    Forward / Reject
-</button>
-        `;
+        // DYNAMIC CONTROLS LOGIC: Check agar issue 'Other' me hai
+        let actionControlsHTML = '';
+        
+        if (issue.category === 'Other') {
+            // COMMAND CENTRE VIEW (For Other category)
+            actionControlsHTML = `
+              <div class="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <p class="text-[11px] font-bold text-indigo-800 mb-2 uppercase tracking-wide">⚡ Command Centre Routing</p>
+                  <select id="assign_${escapeHTML(issue.ticket_id)}" class="w-full text-xs p-1.5 mb-2 border border-indigo-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                      <option value="">-- Select Target Department --</option>
+                      <option value="Electricity (UPPCL)">Electricity (UPPCL)</option>
+                      <option value="Water (Jal Nigam)">Water (Jal Nigam)</option>
+                      <option value="Roads (PWD)">Roads (PWD)</option>
+                      <option value="Waste (Nagar Nigam)">Waste (Nagar Nigam)</option>
+                  </select>
+                  <div class="flex gap-2">
+                      <button onclick="reassignIssue('${escapeHTML(issue.ticket_id)}')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-2 rounded-md text-xs font-bold transition-all shadow-sm">
+                        Transfer Issue
+                      </button>
+                      <button onclick="deleteIssue('${escapeHTML(issue.ticket_id)}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded-md text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Delete
+                      </button>
+                  </div>
+              </div>
+            `;
+        } else {
+            // NORMAL OFFICER VIEW (For specific departments)
+            actionControlsHTML = `
+              <div class="status-controls mt-3" onclick="event.stopPropagation()">
+                <select id="status_${escapeHTML(issue.ticket_id)}" onchange="toggleFileInput('${escapeHTML(issue.ticket_id)}')">
+                  <option value="Reported"    ${issue.status === 'Reported'     ? 'selected' : ''}>📋 Reported</option>
+                  <option value="In Progress" ${issue.status === 'In Progress'  ? 'selected' : ''}>🔧 In Progress</option>
+                  <option value="Resolved"    ${issue.status === 'Resolved'     ? 'selected' : ''}>✅ Resolved (AI Verify)</option>
+                </select>
+                <label class="file-input-label" id="filelabel_${escapeHTML(issue.ticket_id)}">
+                  📷 Upload Repair Photo:
+                  <input type="file" id="file_${escapeHTML(issue.ticket_id)}" accept="image/*">
+                </label>
+                <button class="update-btn" id="btn_${escapeHTML(issue.ticket_id)}" onclick="updateStatus('${escapeHTML(issue.ticket_id)}')">Save Status</button>
+              </div>
+              
+              <button onclick="forwardIssue('${escapeHTML(issue.ticket_id)}')" class="mt-3 w-full flex items-center justify-center gap-2 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 px-3 py-2 rounded-md text-xs font-bold transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                Re-Route / Reject Issue
+              </button>
+            `;
+        }
+
+        // HTML ASSEMBLY
+        // Final Merged & Optimized Card Assembly
+card.innerHTML = `
+  <div class="issue-header flex justify-between items-center mb-3">
+    <span class="ticket-id font-bold text-indigo-600">#${escapeHTML(issue.ticket_id || 'MISSING-ID')}</span>
+    <span class="severity-badge ${severityClass(issue.severity)} px-2 py-1 rounded text-[10px]">${escapeHTML(issue.severity || 'N/A')}</span>
+  </div>
+  
+  <!-- Thumbnail Image -->
+  <img src="${escapeHTML(issue.image_url || '')}" class="issue-thumbnail w-full h-32 object-cover rounded-md border border-slate-200 shadow-sm mb-3" onerror="this.style.display='none'">
+
+  <!-- Description -->
+  <div class="mb-3">
+    <p class="text-sm text-gray-700 leading-snug">${escapeHTML(issue.description_en || 'No description available')}</p>
+  </div>
+
+  <!-- Meta Data (Pincode & Date) -->
+  <div class="text-[11px] text-gray-400 mb-2 flex gap-4">
+    <span>📌 ${escapeHTML(issue.pincode || '—')}</span>
+    <span>🕒 ${escapeHTML(issue.created_at || 'N/A')}</span>
+  </div>
+
+  <!-- Status Pill -->
+  <div class="mb-3">
+    <span class="status-pill ${pillClass(issue.status)} text-[10px] px-2 py-1 rounded-full">${escapeHTML(issue.status || 'Reported')}</span>
+  </div>
+
+  <!-- AI Score Badge (If applicable) -->
+  ${(issue.status === 'Resolved' && issue.resolution_score) ? `<div class="score-badge text-[10px] bg-green-50 text-green-700 mb-2">🤖 AI Match: ${escapeHTML(issue.resolution_score)}</div>` : ''}
+  ${scoreHTML}
+  <!-- Action Controls -->
+  ${actionControlsHTML}
+`;
+          
 
         container.appendChild(card);
 
@@ -325,8 +421,56 @@
     if (mapMarkers.length > 0) {
       try { map.fitBounds(bounds, { padding: [50, 50] }); } catch(e){}
     }
-  }
-  // === END BULLETPROOF RENDER FUNCTION ===
+}
+
+// ---------------- NAYE HELPER FUNCTIONS ----------------
+
+function reassignIssue(ticketId) {
+    const selectElement = document.getElementById(`assign_${ticketId}`);
+    const newCategory = selectElement.value;
+    
+    if (!newCategory) {
+        alert('Bhai, pehle koi department toh select karo!');
+        return;
+    }
+
+    fetch('/api/reassign_issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId, category: newCategory })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Issue successfully transfered to ${newCategory}!`);
+            fetchIssues(); 
+        } else {
+            alert('Transfer failed: ' + data.error);
+        }
+    });
+}
+
+function deleteIssue(ticketId) {
+    const isConfirmed = confirm("Are you sure? Yeh issue permanently delete ho jayega aur wapas nahi aayega.");
+    if (!isConfirmed) return;
+
+    fetch('/api/delete_issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Issue deleted permanently from the system.');
+            fetchIssues();
+        } else {
+            alert('Deletion failed: ' + data.error);
+        }
+    });
+}
+
+
 
   function toggleFileInput(ticketId) {
     const sel   = document.getElementById(`status_${ticketId}`);
@@ -360,6 +504,33 @@
   }
 
   updateCityDropdown();
+  function forwardIssue(ticketId) {
+    const reason = prompt("Enter reason for forwarding/rejecting (e.g., 'Not my department, belongs to Electricity'):");
+    
+    // Agar officer ne cancel kar diya ya empty chhod diya
+    if (!reason || reason.trim() === "") {
+        return; 
+    }
+
+    fetch('/api/forward_issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId, notes: reason })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('Issue successfully flagged for re-routing!');
+            fetchIssues(); // Dashboard refresh karne ke liye
+        } else {
+            alert('Error updating issue: ' + data.error);
+        }
+    })
+    .catch(err => {
+        console.error('Network Error:', err);
+        alert('Server error. Please try again.');
+    });
+}
 </script>
 </body>
 </html>

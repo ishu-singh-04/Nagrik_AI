@@ -71,7 +71,8 @@ def setup_firestore_db():
                 {'id': 1, 'email': 'admin@uppcl.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'UPPCL', 'category': 'Electricity'},
                 {'id': 2, 'email': 'admin@pwd.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'PWD', 'category': 'Pothole'},
                 {'id': 3, 'email': 'admin@jalnigam.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'Jal Nigam', 'category': 'Water'},
-                {'id': 4, 'email': 'admin@nagarnigam.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'Nagar Nigam', 'category': 'Waste'}
+                {'id': 4, 'email': 'admin@nagarnigam.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'Nagar Nigam', 'category': 'Waste'},
+                {'id': 5, 'email': 'admin@command.gov.in', 'password_hash': generate_password_hash('admin123'), 'department': 'Command centre', 'category': 'other'}
             ]
             for user in demo_users:
                 officers_ref.document(user['email']).set(user)
@@ -285,20 +286,42 @@ def analyze_image():
     return jsonify({"success": True, "temp_image_name": safe_name, **ai_data})
 
 # ================= 1. OFFICER LOGIN ROUTE =================
-@app.route("/api/officer-login", methods=["POST"])
-def api_login():
-    data = request.json
-    docs = list(db.collection('officers').where('email', '==', data.get('email')).stream())
+from werkzeug.security import check_password_hash
+
+@app.route('/api/officer-login', methods=['POST'])
+def login():
+    # Parse the incoming JSON body
+    # passing silent=True prevents Flask from throwing a 400 error on bad JSON
+    # we can also support force=True if Content-Type header is missing
+    data = request.get_json(silent=True) or {}
     
-    if docs:
-        officer = docs[0].to_dict()
-        if check_password_hash(officer['password_hash'], data.get('password')):
-            session['officer_id'] = officer.get('id') 
-            session['department'] = officer['department']
-            session['category'] = officer['category']
-            return jsonify({"success": True})
+    email = data.get('email')
+    password = data.get('password')
+    department = data.get('department')
+    
+    print(f"Checking login for: {email}")
+    
+    if not email or not password:
+        return jsonify({"success": False, "error": "Email and password are required"}), 400
+        
+    # Fetch officer document from Firestore using the email (which is the document ID)
+    try:
+        officer_ref = db.collection('officers').document(email)
+        officer_doc = officer_ref.get()
+        
+        if officer_doc.exists:
+            officer = officer_doc.to_dict()
+            # Perform security verification check on password_hash
+            if check_password_hash(officer.get('password_hash', ''), password):
+                session['officer_id'] = officer['email']
+                session['department'] = officer['department']
+                session['category'] = officer['category']
+                return jsonify({"success": True})
+    except Exception as e:
+        print(f"Firestore database query error: {e}")
+        return jsonify({"success": False, "error": "Internal database error"}), 500
             
-    return jsonify({"success": False, "error": "Invalid administrative credentials"}), 401
+    return jsonify({"success": False, "error": "Invalid email or password"}), 401
 
 # ================= 2. CITIZEN SUBMIT ISSUE ROUTE =================
 @app.route("/api/submit_issue", methods=["POST"])
@@ -447,7 +470,35 @@ def resolve_with_ai():
     return jsonify({"success": False, "error": "Verification photo execution invalid"}), 400
 
 # ================= NEW: FORWARD/REJECT ISSUE ROUTE =================
+
 @app.route("/api/forward_issue", methods=["POST"])
+def forward_issue():
+    # 1. Security Check
+    if 'officer_id' not in session: 
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+        
+    data = request.json
+    ticket_id = data.get('ticket_id')
+    
+    # 2. Frontend se 'notes' key aa rahi hai
+    notes = data.get('notes', 'No reason provided') 
+    
+    if ticket_id:
+        try:
+            # 3. Database Update
+            db.collection('issues').document(ticket_id).update({
+                "status": "Forwarded",   # Frontend tracker logic ke liye
+                "notes": notes,
+                "category": "Other"      # Taki current officer ke view se hat jaye
+            })
+            return jsonify({"success": True})
+        except Exception as e:
+            print(f"Firestore update error: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+            
+    return jsonify({"success": False, "error": "Ticket ID missing"}), 400
+
+''' we will keep this route code safe @app.route("/api/forward_issue", methods=["POST"])
 def forward_issue():
     if 'officer_id' not in session: 
         return jsonify({"success": False}), 401
@@ -463,11 +514,49 @@ def forward_issue():
         })
         return jsonify({"success": True})
         
-    return jsonify({"success": False, "error": "Ticket ID missing"})
+    return jsonify({"success": False, "error": "Ticket ID missing"}) '''
 
 @app.route("/static/uploads/<path:filename>")
 def uploaded_file(filename): 
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+
+# ---------------- COMMAND CENTRE APIs this is main portal of other and rejected issue ----------------
+
+@app.route('/api/reassign_issue', methods=['POST'])
+def reassign_issue():
+    data = request.json
+    ticket_id = data.get('ticket_id')
+    new_category = data.get('category')
+    
+    if ticket_id and new_category:
+        try:
+            # forward issue to new department and make status reported
+            db.collection('issues').document(ticket_id).update({
+                'category': new_category,
+                'status': 'Reported',
+                'notes': f'Re-routed to {new_category} by Command Centre'
+            })
+            return jsonify({'success': True})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+            
+    return jsonify({'success': False, 'error': 'Missing ticket ID or category'}), 400
+
+@app.route('/api/delete_issue', methods=['POST'])
+def delete_issue():
+    data = request.json
+    ticket_id = data.get('ticket_id')
+    
+    if ticket_id:
+        try:
+            # if issue is completley un realated then we delete it 
+            db.collection('issues').document(ticket_id).delete()
+            return jsonify({'success': True})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+            
+    return jsonify({'success': False, 'error': 'Missing ticket ID'}), 400
 
 if __name__ == "__main__": 
     app.run(host="0.0.0.0", port=5000, debug=True)

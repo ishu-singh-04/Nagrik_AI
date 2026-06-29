@@ -8,10 +8,7 @@
   
   <!-- YAHAN YE LINE ADD KAR DO -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Officer Portal — Nagrik.ai</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
       --primary: #1E293B; --bg: #F1F5F9; --card: #FFFFFF;
@@ -90,6 +87,26 @@
       color: #64748B; text-decoration: none;
     }
     .back-link:hover { color: var(--accent); }
+
+    /* Login Container Styling */
+.login-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+#deptSelect {
+    width: 100%;
+    max-width: 400px; /* Dropdown ko limit kar rahe hain */
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background-color: white;
+    font-size: 14px;
+}
   </style>
 </head>
 <body>
@@ -101,10 +118,19 @@
     </svg>
 </a>
 
+
 <div class="login-box">
   <div class="logo">Nai</div>
   <h2>Officer Portal</h2>
   <p class="subtitle">Secure Command Center Access</p>
+  <select name="department" id="deptSelect" class="w-full p-3 mb-4 border rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-500">
+    <option value="" disabled selected>-- Select Your Department --</option>
+    <option value="Electricity (UPPCL)">Electricity (UPPCL)</option>
+    <option value="Water (Jal Nigam)">Water (Jal Nigam)</option>
+    <option value="Roads (PWD)">Roads (PWD)</option>
+    <option value="Waste (Nagar Nigam)">Waste (Nagar Nigam)</option>
+    <option value="Other">Command Centre (Other)</option>
+</select>
 
   <div class="error-alert" id="errorMsg">Invalid credentials. Please try again.</div>
 
@@ -137,10 +163,16 @@
   });
 
   async function doLogin() {
-    const email    = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const btn      = document.getElementById('loginBtn');
-    const errorMsg = document.getElementById('errorMsg');
+    const email      = document.getElementById('email').value.trim();
+    const password   = document.getElementById('password').value;
+    const department = document.getElementById('deptSelect').value; // Dropdown value
+    const btn        = document.getElementById('loginBtn');
+    const errorMsg   = document.getElementById('errorMsg');
+
+    if (!department) { // Department validation
+        showError('Please select a department.');
+        return;
+    }
 
     if (!email || !password) {
       showError('Please enter both email and password.');
@@ -152,11 +184,17 @@
     errorMsg.style.display = 'none';
 
     try {
-      const res  = await fetch('/api/officer-login', {
+      const res  = await fetch('/api/officer-login', { // Verify karo backend mein ye route hai
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
+        body:    JSON.stringify({ email, password, department }), // department bhejna zaroori hai
       });
+    // try {
+    //   const res  = await fetch('/api/officer-login', {
+    //     method:  'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body:    JSON.stringify({ email, password }),
+    //   });
       const data = await res.json();
 
       if (data.success) {

@@ -301,7 +301,7 @@ function renderDashboard(issues) {
     document.getElementById('statTotal').textContent = issues.length;
     document.getElementById('statResolved').textContent = issues.filter(i => i.status === 'Resolved').length;
     document.getElementById('statPending').textContent = issues.length - issues.filter(i => i.status === 'Resolved').length;
-
+    container.innerHTML = '';
     const bounds = L.latLngBounds();
 
     issues.forEach(issue => {

@@ -1,0 +1,16 @@
+runtime: python3.12.10
+instance_class: F1
+
+# ENTRYPOINT ADD KIYA (app:app ka matlab hai app.py file aur uske andar ka app instance)
+entrypoint: gunicorn -b :$PORT app:app
+
+env_variables:
+  FLASK_SECRET_KEY: "dev-secret"
+  GEMINI_API_KEY: "TUMHARA_GEMINI_API_KEY_YAHAN_DAALO"
+
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /.*
+  script: auto

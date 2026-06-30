@@ -376,7 +376,7 @@ def submit_issue():
     issue_data = {
         'ticket_id': ticket_id,
         'latitude': lat, 'longitude': lon,
-        'image_url': f"live_image_url, py",
+        'image_url': live_image_url,
         'category': category, 'status': 'Reported', 'report_count': 1,
         'eta_deadline': eta_deadline.strftime("%Y-%m-%d %H:%M"),
         'created_at': datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),

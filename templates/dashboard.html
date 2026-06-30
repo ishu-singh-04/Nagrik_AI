@@ -128,7 +128,24 @@
     align-items: center;
     justify-content: center;
 }
-  
+  /* Mobile Responsiveness Fix */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column-reverse; /* Map upar, sidebar neeche */
+        overflow: auto;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-top: 2px solid var(--border);
+      }
+      .map-container {
+        width: 100%;
+        height: 50vh; /* Map ko screen ka aadha hissa dega */
+        min-height: 350px;
+      }
+    }
   </style>
 </head>
 <body>

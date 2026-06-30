@@ -123,12 +123,12 @@ def analyze_image_with_gemini(image_bytes: bytes):
 
     # === SMART PROMPT (With Fake Detection) ===
     prompt = (
-        "Analyze this image for civic issues. Return ONLY a valid JSON object with EXACTLY these keys: category, severity, description_en, description_hi.\n"
+        "Analyze this image for outdoor civic infrastructure issues. Return ONLY a valid JSON object with EXACTLY these keys: category, severity, description_en, description_hi.\n"
         "Allowed Categories: Pothole, Electricity, Water, Waste, Fake, Other.\n"
-        "Rules:\n"
-        "- Map broken roads to 'Pothole', wires/poles to 'Electricity', leaks to 'Water', garbage to 'Waste'.\n"
-        "- IF the image is a selfie, portrait, indoor room, meme, or completely unrelated to street issues, MUST set category to 'Fake'.\n"
-        "- Return ONLY raw JSON. No markdown formatting."
+        "CRITICAL RULES:\n"
+        "1. IF the image shows a document, paper, text, screen, selfie, indoor room, household items, or anything NOT located on an outdoor public street, YOU MUST STRICTLY set category to 'Fake'. DO NOT attempt to categorize indoor clutter as 'Waste' or documents as 'Other'.\n"
+        "2. Map broken outdoor roads to 'Pothole', outdoor wires/poles to 'Electricity', outdoor street leaks to 'Water', and outdoor street garbage to 'Waste'.\n"
+        "3. Return ONLY raw JSON. No markdown formatting."
     )
 
     # 2. Supported Models Fallback Chain

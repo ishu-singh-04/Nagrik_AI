@@ -131,19 +131,21 @@
   /* Mobile Responsiveness Fix */
     @media (max-width: 768px) {
       body {
-        flex-direction: column-reverse; /* Map upar, sidebar neeche */
-        overflow: auto;
+        flex-direction: column !important; /* Sidebar upar, Map neeche */
+        overflow-x: hidden;
       }
       .sidebar {
-        width: 100%;
-        height: auto;
+        width: 100% !important;
+        height: auto !important;
+        max-height: 50vh;
+        overflow-y: auto; /* Agar content zyada ho toh scroll ho jaye */
         border-right: none;
-        border-top: 2px solid var(--border);
+        border-bottom: 2px solid var(--border);
       }
       .map-container {
-        width: 100%;
-        height: 50vh; /* Map ko screen ka aadha hissa dega */
-        min-height: 350px;
+        width: 100% !important;
+        height: 50vh !important; /* Map ko exact aadhi screen milegi */
+        min-height: 400px;
       }
     }
   </style>

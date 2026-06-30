@@ -5,6 +5,7 @@ import json
 import base64
 import re
 import time
+import requests
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -343,8 +344,21 @@ def submit_issue():
             return jsonify({"success": True, "ticket_id": issue_doc.id, "badge": "🏅 Top Reporter (Linked Entry)", "duplicate": True})
             
     old_path = UPLOAD_FOLDER / data['temp_image_name']
-    new_name = data['temp_image_name'].replace('temp_', 'final_')
-    if old_path.exists(): os.rename(old_path, UPLOAD_FOLDER / new_name)
+    live_image_url = ""
+    
+    if old_path.exists():
+        with open(old_path, "rb") as f:
+            encoded_image = base64.b64encode(f.read()).decode('utf-8')
+            
+        # ImgBB par direct upload
+        imgbb_api_key = "206b3c0784bc16f8280066dec86f351d"
+        try:
+            response = requests.post("https://api.imgbb.com/1/upload", data={"key": imgbb_api_key, "image": encoded_image})
+            result = response.json()
+            if result.get("success"):
+                live_image_url = result["data"]["url"]
+        except Exception as e:
+            print("ImgBB Upload Error:", e)
     
     ticket_id = generate_ticket_id()
     eta_deadline = datetime.now(timezone.utc) + timedelta(hours=eta_hours)
@@ -362,7 +376,7 @@ def submit_issue():
     issue_data = {
         'ticket_id': ticket_id,
         'latitude': lat, 'longitude': lon,
-        'image_url': f"/static/uploads/{new_name}",
+        'image_url': f"live_image_url, py",
         'category': category, 'status': 'Reported', 'report_count': 1,
         'eta_deadline': eta_deadline.strftime("%Y-%m-%d %H:%M"),
         'created_at': datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
@@ -450,19 +464,33 @@ def resolve_with_ai():
         
     if status == "Resolved" and "after_image" in request.files:
         after_file = request.files["after_image"]
-        new_name = f"resolved_{ticket_id}_{random.randint(1000,9999)}.jpg"
-        after_path = UPLOAD_FOLDER / new_name
-        after_file.save(after_path)
+        after_bytes = after_file.read()
         
+        # 1. Purani image ImgBB link se fetch karo (taki AI compare kar sake)
         before_url = doc.to_dict().get('image_url')
-        before_path = str(UPLOAD_FOLDER) + "/" + before_url.split('/')[-1]
+        try:
+            before_bytes = requests.get(before_url).content
+        except:
+            return jsonify({"success": False, "error": "Original image read failed"}), 400
+            
+        # 2. AI se check karwao
+        ai_verdict = verify_repair_with_gemini(before_bytes, after_bytes)
         
-        with open(before_path, "rb") as f1, open(after_path, "rb") as f2:
-            ai_verdict = verify_repair_with_gemini(f1.read(), f2.read())
+        # 3. Nayi (repaired) image ko bhi ImgBB par upload karo
+        encoded_after = base64.b64encode(after_bytes).decode('utf-8')
+        imgbb_api_key = os.getenv("IMGBB_API_KEY")
+        resolved_image_url = ""
+        try:
+            response = requests.post("https://api.imgbb.com/1/upload", data={"key": imgbb_api_key, "image": encoded_after})
+            res_json = response.json()
+            if res_json.get("success"):
+                resolved_image_url = res_json["data"]["url"]
+        except Exception as e:
+            print("ImgBB Upload Error:", e)
             
         issue_ref.update({
             "status": "Resolved", 
-            "resolved_image_url": f"/static/uploads/{new_name}", 
+            "resolved_image_url": resolved_image_url, 
             "resolution_score": ai_verdict['score']
         })
         return jsonify({"success": True, "score": ai_verdict['score']})

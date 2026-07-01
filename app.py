@@ -444,6 +444,8 @@ def get_all_issues():
     issues.sort(key=lambda x: (x.get('status') == 'Resolved', x.get('created_at', '')), reverse=True)
     return jsonify({"success": True, "issues": issues})
 
+
+
 @app.route("/api/resolve_with_ai", methods=["POST"])
 def resolve_with_ai():
     if 'officer_id' not in session: 
@@ -466,37 +468,56 @@ def resolve_with_ai():
         after_file = request.files["after_image"]
         after_bytes = after_file.read()
         
-        # 1. Purani image ImgBB link se fetch karo (taki AI compare kar sake)
-        before_url = doc.to_dict().get('image_url')
+        # 1. Purani image ImgBB link se fetch karo
+        before_url = doc.to_dict().get('image_url', '')
+        
+        # Safe Check: Agar purani testing wali local image hai, toh API fail ho jayegi
+        if not before_url.startswith("http"):
+             return jsonify({"success": False, "error": "Please test with a newly created issue. Old issue has invalid URL."}), 400
+
         try:
             before_bytes = requests.get(before_url).content
-        except:
-            return jsonify({"success": False, "error": "Original image read failed"}), 400
+        except Exception as e:
+            print("Failed to download before image:", e)
+            return jsonify({"success": False, "error": "Original image download failed"}), 400
             
         # 2. AI se check karwao
         ai_verdict = verify_repair_with_gemini(before_bytes, after_bytes)
         
-        # 3. Nayi (repaired) image ko bhi ImgBB par upload karo
+        # 3. Nayi (repaired) image ko ImgBB par upload karo
         encoded_after = base64.b64encode(after_bytes).decode('utf-8')
         imgbb_api_key = os.getenv("IMGBB_API_KEY")
         resolved_image_url = ""
+        
         try:
             response = requests.post("https://api.imgbb.com/1/upload", data={"key": imgbb_api_key, "image": encoded_after})
             res_json = response.json()
             if res_json.get("success"):
                 resolved_image_url = res_json["data"]["url"]
+            else:
+                print("ImgBB returned error:", res_json)
         except Exception as e:
-            print("ImgBB Upload Error:", e)
+            print("ImgBB Upload Exception:", e)
             
+        # 4. FALLBACK LOGIC: Agar ImgBB cloud fail ho gaya, toh server par backup save karo
+        if not resolved_image_url:
+            print("Falling back to local storage for After Image...")
+            fallback_name = f"resolved_{ticket_id}_{int(time.time())}.jpg"
+            fallback_path = UPLOAD_FOLDER / fallback_name
+            with open(fallback_path, "wb") as f:
+                f.write(after_bytes)
+            resolved_image_url = f"/static/uploads/{fallback_name}"
+            
+        # 5. Update Firebase securely
         issue_ref.update({
             "status": "Resolved", 
             "resolved_image_url": resolved_image_url, 
-            "resolution_score": ai_verdict['score']
+            "resolution_score": ai_verdict.get('score', 0)
         })
-        return jsonify({"success": True, "score": ai_verdict['score']})
+        
+        return jsonify({"success": True, "score": ai_verdict.get('score', 0), "image_url": resolved_image_url})
         
     return jsonify({"success": False, "error": "Verification photo execution invalid"}), 400
-
 # ================= NEW: FORWARD/REJECT ISSUE ROUTE =================
 
 @app.route("/api/forward_issue", methods=["POST"])
